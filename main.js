@@ -671,7 +671,7 @@ app.whenReady().then(async () => {
                 console.log('Falling back to index.html');
                 mainWindow.loadFile('index.html');
               }
-            }, 200); // Very brief delay just to show spinner
+            }, 500); // Very brief delay just to show spinner
             
           } catch (error) {
             console.error('Spinner load failed:', error);
@@ -734,7 +734,7 @@ app.whenReady().then(async () => {
       } catch (error) {
         console.log('Tray creation failed:', error.message);
       }
-    }, 100);
+    }, 500);
     
     // Setup window event handlers
     mainWindow.on('show', () => {
