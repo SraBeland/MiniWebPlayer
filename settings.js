@@ -7,10 +7,11 @@ const showError = (message) => {
 };
 
 // Helper function to populate form fields
-const populateFormFields = (settings, url, refreshInterval) => {
+const populateFormFields = (settings, url, refreshInterval, startupEnabled) => {
   const elements = {
     url: document.getElementById('url'),
     refreshInterval: document.getElementById('refreshInterval'),
+    startupEnabled: document.getElementById('startupEnabled'),
     xPosition: document.getElementById('xPosition'),
     yPosition: document.getElementById('yPosition'),
     windowWidth: document.getElementById('windowWidth'),
@@ -28,6 +29,7 @@ const populateFormFields = (settings, url, refreshInterval) => {
   // Populate values
   elements.url.value = url;
   elements.refreshInterval.value = refreshInterval;
+  elements.startupEnabled.checked = startupEnabled;
   elements.xPosition.value = settings.x;
   elements.yPosition.value = settings.y;
   elements.windowWidth.value = settings.width;
@@ -40,17 +42,19 @@ const populateFormFields = (settings, url, refreshInterval) => {
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     // Get all settings in parallel
-    const [currentSettings, urlResult, refreshResult] = await Promise.all([
+    const [currentSettings, urlResult, refreshResult, startupResult] = await Promise.all([
       window.electronAPI.getCurrentSettings(),
       window.electronAPI.getUrl(),
-      window.electronAPI.getRefreshInterval()
+      window.electronAPI.getRefreshInterval(),
+      window.electronAPI.getStartupEnabled()
     ]);
     
     const url = urlResult.success ? urlResult.url : '';
     const refreshInterval = refreshResult.success ? refreshResult.refreshInterval : 0;
+    const startupEnabled = startupResult.success ? startupResult.enabled : false;
     
     // Populate form fields
-    const success = populateFormFields(currentSettings, url, refreshInterval);
+    const success = populateFormFields(currentSettings, url, refreshInterval, startupEnabled);
     if (!success) {
       throw new Error('Failed to populate form fields - some elements are missing');
     }
@@ -101,6 +105,8 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
     refreshInterval: parseInt(formData.get('refreshInterval')) || 0
   };
   
+  const startupEnabled = formData.get('startupEnabled') === 'on';
+  
   // Validate settings
   const validationErrors = validateSettings(settings);
   if (validationErrors.length > 0) {
@@ -109,10 +115,18 @@ document.getElementById('settingsForm').addEventListener('submit', async (e) => 
   }
   
   try {
+    // Save regular settings
     const result = await window.electronAPI.saveSettings(settings);
     
     if (result && result.success === false) {
       throw new Error(result.error || 'Unknown error occurred');
+    }
+    
+    // Save startup setting separately
+    const startupResult = await window.electronAPI.setStartupEnabled(startupEnabled);
+    
+    if (startupResult && startupResult.success === false) {
+      throw new Error(startupResult.error || 'Failed to save startup setting');
     }
     
     // Close the settings window after saving

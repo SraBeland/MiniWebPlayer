@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, Menu, Tray } = require('electron/main')
 const path = require('node:path')
 const DatabaseManager = require('./database')
 const InstanceManager = require('./instance-manager')
+const { exec } = require('child_process')
+const os = require('os')
 
 let dbManager;
 let instanceManager;
@@ -1036,3 +1038,90 @@ const setupRefreshTimer = async () => {
     }
   }
 }
+
+// Windows startup management functions
+const isWindowsStartupEnabled = () => {
+  return new Promise((resolve) => {
+    if (os.platform() !== 'win32') {
+      resolve(false);
+      return;
+    }
+    
+    const command = 'reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "MiniWebPlayer"';
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        resolve(false);
+      } else {
+        resolve(stdout.includes('MiniWebPlayer'));
+      }
+    });
+  });
+}
+
+const enableWindowsStartup = () => {
+  return new Promise((resolve, reject) => {
+    if (os.platform() !== 'win32') {
+      reject(new Error('Windows startup is only supported on Windows'));
+      return;
+    }
+    
+    const appPath = process.execPath;
+    const command = `reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "MiniWebPlayer" /t REG_SZ /d "\\"${appPath}\\"" /f`;
+    
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error enabling Windows startup:', error);
+        reject(error);
+      } else {
+        console.log('Windows startup enabled successfully');
+        resolve(true);
+      }
+    });
+  });
+}
+
+const disableWindowsStartup = () => {
+  return new Promise((resolve, reject) => {
+    if (os.platform() !== 'win32') {
+      reject(new Error('Windows startup is only supported on Windows'));
+      return;
+    }
+    
+    const command = 'reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "MiniWebPlayer" /f';
+    
+    exec(command, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error disabling Windows startup:', error);
+        reject(error);
+      } else {
+        console.log('Windows startup disabled successfully');
+        resolve(true);
+      }
+    });
+  });
+}
+
+// IPC handlers for Windows startup management
+ipcMain.handle('get-startup-enabled', async () => {
+  try {
+    const enabled = await isWindowsStartupEnabled();
+    return { success: true, enabled };
+  } catch (error) {
+    console.error('Error checking startup status:', error);
+    return { success: false, error: error.message };
+  }
+})
+
+ipcMain.handle('set-startup-enabled', async (event, enabled) => {
+  try {
+    if (enabled) {
+      await enableWindowsStartup();
+    } else {
+      await disableWindowsStartup();
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting startup status:', error);
+    return { success: false, error: error.message };
+  }
+})

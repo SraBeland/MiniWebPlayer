@@ -26,5 +26,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getRefreshInterval: () => ipcRenderer.invoke('get-refresh-interval'),
   
   // Instance management
-  getInstanceInfo: () => ipcRenderer.invoke('get-instance-info')
+  getInstanceInfo: () => ipcRenderer.invoke('get-instance-info'),
+  
+  // Windows startup management
+  getStartupEnabled: () => ipcRenderer.invoke('get-startup-enabled'),
+  setStartupEnabled: (enabled) => ipcRenderer.invoke('set-startup-enabled', enabled)
 })

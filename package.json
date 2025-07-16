@@ -70,12 +70,21 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MiniWebPlayer",
       "uninstallDisplayName": "MiniWebPlayer",
       "license": "LICENSE.txt",
-      "artifactName": "Installer-${productName}-${version}.exe"
+      "artifactName": "Installer-${productName}-${version}.exe",
+      "installerSidebar": "installer-icon.png",
+      "uninstallerSidebar": "installer-icon.png",
+      "runAfterFinish": true,
+      "menuCategory": false,
+      "warningsAsErrors": false,
+      "include": "installer-script.nsh",
+      "installerHeaderIcon": "icon.ico",
+      "deleteAppDataOnUninstall": false
     },
     "portable": {
       "artifactName": "${productName}-${version}-portable.exe"
